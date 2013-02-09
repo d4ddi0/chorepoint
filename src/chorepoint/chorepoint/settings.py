@@ -2,7 +2,9 @@
 
 from os import path
 
-db = path.abspath(path.join(path.dirname(__file__), 'chorepoint.sqlite'))
+BASEDIR = path.abspath(path.dirname(__file__))
+db = path.join(BASEDIR, 'chorepoint.sqlite')
+
 print db
 
 DEBUG = True
@@ -109,6 +111,7 @@ ROOT_URLCONF = 'chorepoint.urls'
 WSGI_APPLICATION = 'chorepoint.wsgi.application'
 
 TEMPLATE_DIRS = (
+    path.join(BASEDIR, 'site_templates'),
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -118,7 +121,7 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.sites',
+    #'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Uncomment the next line to enable the admin:
