@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-# Create your models here.
-
 class Task(models.Model):
     '''A Task is a unit of work that will be tracked'''
     name = models.CharField(max_length=16)
@@ -30,12 +28,17 @@ class SubTask(models.Model):
 class Chore(models.Model):
     '''A is a specific instance of a Task being done'''
     user = models.ForeignKey(User)
-    chore = models.ForeignKey(Task)
-    date = models.DateTimeField('date done')
+    task = models.ForeignKey(Task)
+    date = models.DateField('date done')
     adjustment = models.IntegerField()
     comment = models.CharField(max_length=200)
     adminComment = models.CharField(max_length=200)
+        
+
+    def points(self):
+        return chore.task.value + chore.adjustment
 
     def __unicode__(self):
-        return self.chore.name + ' on ' + str(self.date)
+        return self.task.name + ': done on ' + \
+                self.date.isoformat() + ' by ' + self.user.username
 

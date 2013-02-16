@@ -7,6 +7,8 @@ urlpatterns = patterns('',
     # url(r'^$', 'chorepoint.views.home', name='home'),
     # url(r'^chorepoint/', include('chorepoint.foo.urls')),
 
-    # Uncomment the next line to enable the admin:
     url(r'^$', views.index, name='index'),
+    url(r'^(?P<task_id>\d+)/$', views.detail, name='detail'),
+    url(r'^(?P<task_id>\d+)/results/$', views.results, name='results'),
+    url(r'^(?P<task_id>\d+)/vote/$', views.vote, name='vote'),
 )
