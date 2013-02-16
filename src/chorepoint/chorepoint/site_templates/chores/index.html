@@ -1,0 +1,21 @@
+{% if userlist %}
+    Users Points To Do <br />
+    <ul>
+    {% for user in userlist %}
+        <li> {{ user }} {{ user.points }} {{ user.nexttask }}</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No Users defined.</p>
+{% endif %}
+
+{% if tasklist %}
+    Tasks <br />
+    <ul>
+    {% for task in tasklist %}
+    <li> {{ task }}: {{ task.nextuser }} should be the next one to do this task</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No Tasks need to be done at this time.</p>
+{% endif %}
