@@ -1,5 +1,4 @@
-from django.http import HttpResponse
-from django.template import Context, loader
+from django.shortcuts import render
 from django.contrib.auth.models import User
 from chores.models import Chore, Task
 import datetime
@@ -32,9 +31,8 @@ def index(request):
             user.nexttask = Task(name="All caught up")
 #    userlist.sort(key=lambda x: x.points)        
 #    tasklist.sort(key=lambda x: x.priority)
-    template  = loader.get_template('chores/index.html')
-    context = Context({ 'tasklist' :tasklist, 'userlist': userlist })
-    return HttpResponse(template.render(context))
+    return render(request, 'chores/index.html',
+            {'tasklist' :tasklist, 'userlist': userlist })
 
 
 def detail(request, task_id):
