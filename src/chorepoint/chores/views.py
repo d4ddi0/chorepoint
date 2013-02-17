@@ -1,6 +1,7 @@
 from django.shortcuts import render
+from django.http import HttpResponseRedirect
 from django.contrib.auth.models import User
-from chores.models import Chore, Task
+from chores.models import Chore, Task, SubTask, ChoreForm
 import datetime
 
 #trackingduration needs a better home... but where?
@@ -36,7 +37,20 @@ def index(request):
 
 
 def detail(request, task_id):
-    return HttpResponse("You're looking at poll %s." % task_id)
+    task = Task.objects.get(id=task_id)
+    task.subtasklist = SubTask.objects.filter(task=task_id)
+    if request.method == 'POST':
+        form = ChoreForm(request.POST)
+        if form.is_valid():
+            chore = form.save(commit=False)
+            chore.task_id = task_id
+            chore.save()
+            return HttpResponseRedirect('/')
+
+    else:
+        form = ChoreForm()
+    #return render(request, 'chores/accepttask.html', {'task' :task })
+    return render(request, 'chores/accepttask.html', {'task' :task, 'form': form })
 
 def results(request, task_id):
     return HttpResponse("You're looking at the results of poll %s." % task_id)

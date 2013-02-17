@@ -1,0 +1,40 @@
+<html>
+<head>
+</head>
+<body>
+{% if task %}
+
+  <!--  
+    function validate_form() {
+      for (var i = 0; i < {{ task.subtasklist|length }}; i++) {
+        if (!document.forms["choreform"][i].checked) {
+          alert("All tasks must be complete to claim this chore");
+          return false;
+        }
+      }    
+      return true;
+    }
+  -->
+  <h2> {{ task }} </h2>
+  <form name="choreform" action="" method="post">
+    {% csrf_token %}
+    {{ task.description }} <br /> <br />
+    Check each the following subtasks after completing them.
+    <ul>
+      {% for subtask in task.subtasklist %}
+      <li>
+      {{ subtask.description }} <br />
+        <input type="checkbox" name="subtask" value="{{ subtask.id }}" />
+        completed
+      </li>
+    {% endfor %}
+    </ul>
+    {{ form.as_p }}
+    <input type="submit" value="Done!" onclick="validate_form()" />
+
+  </form>
+{% else %}
+  <p>Error: Not a valid task.</p>
+{% endif %}
+</body>
+</html>

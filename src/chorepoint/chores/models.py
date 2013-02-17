@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.forms import ModelForm
+import datetime
 
 class Task(models.Model):
     '''A Task is a unit of work that will be tracked'''
@@ -17,7 +19,7 @@ class Task(models.Model):
 
 class SubTask(models.Model):
     '''Specific work needing to be done to complete the Task'''
-    chore = models.ForeignKey(Task)
+    task = models.ForeignKey(Task)
     description = models.CharField(max_length=40)
 
     def __unicode__(self):
@@ -29,10 +31,10 @@ class Chore(models.Model):
     '''A is a specific instance of a Task being done'''
     user = models.ForeignKey(User)
     task = models.ForeignKey(Task)
-    date = models.DateField('date done')
-    adjustment = models.IntegerField()
-    comment = models.CharField(max_length=200)
-    adminComment = models.CharField(max_length=200)
+    date = models.DateField('date done', default=datetime.date.today())
+    adjustment = models.IntegerField(default=0)
+    comment = models.CharField(max_length=200, blank=True)
+    adminComment = models.CharField(max_length=200, blank =True)
         
 
     def points(self):
@@ -42,3 +44,7 @@ class Chore(models.Model):
         return self.task.name + ': done on ' + \
                 self.date.isoformat() + ' by ' + self.user.username
 
+class ChoreForm(ModelForm):
+    class Meta:
+        model = Chore
+        fields = ('user', 'date')

@@ -1,8 +1,11 @@
 {% if userlist %}
-    Users Points To Do <br />
+  <h2> Users</h2>
     <ul>
     {% for user in userlist %}
-        <li> {{ user }} {{ user.points }} {{ user.nexttask }}</li>
+    <li>
+    {{ user }} has {{ user.points }} points.
+        <a href="/chores/{{ user.nexttask.id }}"> {{ user.nexttask }} </a>
+    </li>
     {% endfor %}
     </ul>
 {% else %}
@@ -10,10 +13,12 @@
 {% endif %}
 
 {% if tasklist %}
-    Tasks <br />
+  <h2> Tasks</h2>
     <ul>
     {% for task in tasklist %}
-    <li> {{ task }}: {{ task.nextuser }} should be the next one to do this task</li>
+    <li>
+    <a href="/chores/{{ task.id }}"> {{ task }} </a>:
+    {{ task.nextuser }} should be the next one to do this task</li>
     {% endfor %}
     </ul>
 {% else %}
