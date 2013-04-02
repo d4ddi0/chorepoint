@@ -18,8 +18,13 @@
     <ul>
     {% for task in tasklist %}
     <li>
-    <a href="/chores/{{ task.id }}"> {{ task }} </a>:
-    {{ task.nextuser }} should be the next one to do this task</li>
+    <a href="/chores/{{ task.id }}"> {{ task }} </a> 
+    should be done in the following order: <br />
+    {% for userpoint in task.userpoints %}
+        {{ userpoint.1 }}({{ userpoint.0 }}),
+        
+    {% endfor %}
+    </li>
     {% endfor %}
     </ul>
 {% else %}

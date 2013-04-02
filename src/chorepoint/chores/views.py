@@ -14,20 +14,23 @@ def index(request):
     chorelist = Chore.objects.filter(date__gte=cutoff_date)
     tasklist = Task.objects.all()
     for task in tasklist:
-        task.userpoints = {
-                user: sum (
+        task.userpoints = [
+                ( sum (
                     [ chore.task.value + chore.adjustment for
                         chore in chorelist if
                         chore.user == user and
                         chore.task == task ]
-                ) for user in userlist
-            }
-        task.nextuser = min(task.userpoints, key=task.userpoints.get)
+                ), user) for user in userlist
+            ]
+        task.nextuser = task.userpoints[0][1]
+        task.userpoints.sort()
     for user in userlist:
-        user.points = sum ([ task.userpoints[user] for task in tasklist ])
+        user.points = 0
+        for task in tasklist:
+            user.points += sum([point[0] for point in task.userpoints if point[1] == user])
         usertasklist = [x for x in tasklist if x.nextuser == user]
         if usertasklist:
-            user.nexttask = max(usertasklist, key=lambda x: x.userpoints[user])
+            user.nexttask = min(usertasklist, key=lambda x: x.userpoints[0])
         else:
             user.nexttask = Task(name="All caught up")
 #    userlist.sort(key=lambda x: x.points)        
