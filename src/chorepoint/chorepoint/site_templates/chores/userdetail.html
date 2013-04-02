@@ -1,0 +1,12 @@
+{% if user %}
+<h2> Chorepoint Details for {{ user }}</h2>
+    <ul>
+    {% for chore in chorelist %}
+        <li>
+        {{ chore }}
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No User defined.</p>
+{% endif %}

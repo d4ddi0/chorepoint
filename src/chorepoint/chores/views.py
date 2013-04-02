@@ -35,6 +35,13 @@ def index(request):
     return render(request, 'chores/index.html',
             {'tasklist' :tasklist, 'userlist': userlist })
 
+def userdetail(request, user_id):
+    user = User.objects.get(id=user_id)
+    cutoff_date = datetime.date.today() - tracking_duration
+    chorelist = Chore.objects.filter(date__gte=cutoff_date).filter(user__id=user_id).order_by('-date')
+    return render(request, 'chores/userdetail.html',
+            {'user': user, 'chorelist': chorelist })
+
 
 def detail(request, task_id):
     task = Task.objects.get(id=task_id)

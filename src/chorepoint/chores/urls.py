@@ -9,6 +9,7 @@ urlpatterns = patterns('',
 
     url(r'^$', views.index, name='index'),
     url(r'^(?P<task_id>\d+)/$', views.detail, name='detail'),
+    url(r'^user/(?P<user_id>\d+)/$', views.userdetail, name='userdetail'),
     url(r'^(?P<task_id>\d+)/results/$', views.results, name='results'),
     url(r'^(?P<task_id>\d+)/vote/$', views.vote, name='vote'),
 )

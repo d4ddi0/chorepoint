@@ -3,7 +3,8 @@
     <ul>
     {% for user in userlist %}
     <li>
-    {{ user }} has {{ user.points }} points.
+        <a href="/chores/user/{{ user.id }}"> {{ user }} </a>
+        has {{ user.points }} points.
         <a href="/chores/{{ user.nexttask.id }}"> {{ user.nexttask }} </a>
     </li>
     {% endfor %}
