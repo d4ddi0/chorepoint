@@ -4,25 +4,59 @@ const sqlite = @cImport(@cInclude("sqlite3.h"));
 // database struct
 var db: ?*sqlite.sqlite3 = null;
 
-export fn pr_task(data: ?*anyopaque, argc: c_int, argv: [*c][*c]u8, names: [*c][*c]u8) i32 {
-    const buf: *[128]u8 = @ptrCast(data);
-    _ = std.fmt.bufPrintZ(buf, "<tr><td>{d}{s}{s}</td></tr>\n", .{ argc, names[1], argv[1] }) catch |err| {
-        std.debug.print("Error: {?}\n", .{err});
-        return sqlite.SQLITE_ERROR;
-    };
+const TextBuf = struct {
+    buf: []u8,
+    pos: usize = 0,
+};
 
+fn tbufPrint(tbuf: *TextBuf, comptime fmt: []const u8, args: anytype) !void {
+    const slice: [:0]u8 = try std.fmt.bufPrintZ(tbuf.*.buf[tbuf.*.pos..], fmt, args);
+    std.debug.print(fmt, args);
+    tbuf.*.pos += slice.len;
+}
+
+fn pr_table_header(tbuf: *TextBuf, argc: c_int, names: [*c][*c]u8) !void {
+    try tbufPrint(tbuf, "<tr>", .{});
+    var i: usize = 0;
+    while (i < argc) {
+        try tbufPrint(tbuf, "<th>{s}</th>", .{names[i]});
+        i += 1;
+    }
+    try tbufPrint(tbuf, "</tr>\n", .{});
+}
+
+export fn pr_task(data: ?*anyopaque, argc: c_int, argv: [*c][*c]u8, names: [*c][*c]u8) i32 {
+    const tbuf: *TextBuf = @alignCast(@ptrCast(data));
+    if (tbuf.*.pos == 0) {
+        pr_table_header(tbuf, argc, names) catch {
+            std.debug.print("error in pr_table_header\n", .{});
+            return sqlite.SQLITE_ERROR;
+        };
+    }
+    tbufPrint(tbuf, "<tr>", .{}) catch return sqlite.SQLITE_ERROR;
+    var i: usize = 0;
+    while (i < argc) {
+        if (argv[i] == null) {
+            tbufPrint(tbuf, "<td>NULL</td>", .{}) catch return sqlite.SQLITE_ERROR;
+        } else {
+            tbufPrint(tbuf, "<td>{s}</td>", .{argv[i]}) catch return sqlite.SQLITE_ERROR;
+        }
+        i += 1;
+    }
+    tbufPrint(tbuf, "</tr>\n", .{}) catch return sqlite.SQLITE_ERROR;
     return sqlite.SQLITE_OK;
 }
 
-pub fn pr_tasks() []u8 {
+pub fn pr_tasks(txt: []u8) []u8 {
     const select_stmt = "SELECT * FROM task;";
-    var buf: [128]u8 = [_]u8{0} ** 128;
+    var tbuf = TextBuf{ .buf = txt };
     var err_msg: [*c]u8 = undefined;
-    const result = sqlite.sqlite3_exec(db, select_stmt, pr_task, &buf, &err_msg);
+    const result = sqlite.sqlite3_exec(db, select_stmt, pr_task, &tbuf, &err_msg);
+    defer sqlite.sqlite3_free(err_msg);
     if (result != sqlite.SQLITE_OK) {
-        std.debug.print("Error getting tasks: {s}\n", .{sqlite.sqlite3_errmsg(db)});
+        std.debug.print("Error getting tasks: {s}\n", .{err_msg});
     }
-    return &buf;
+    return tbuf.buf[0..tbuf.pos];
 }
 
 pub fn init() !void {

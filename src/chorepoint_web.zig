@@ -2,10 +2,24 @@ const std = @import("std");
 const zap = @import("zap");
 const data = @import("chorepoint_data.zig");
 
+const html_header =
+    \\<head><style>
+    \\table, th, td {
+    \\    border: 1px solid black;
+    \\    border-collapse: collapse
+    \\}
+    \\</style></head>\n
+;
+
 fn show_tasks(req: zap.Request) void {
-    var buf: [256]u8 = undefined;
-    const s = std.fmt.bufPrint(&buf, "<html><body><h1>{s}<h1></body></html>", .{data.pr_tasks()}) catch return;
-    req.sendBody(s) catch return;
+    var buf: [4096]u8 = undefined;
+    var offset: usize = 0;
+    var s = std.fmt.bufPrint(buf[offset..], "<html>{s}<body><table>\n", .{html_header}) catch return;
+    offset += s.len;
+    s = data.pr_tasks(buf[offset..]);
+    offset += s.len;
+    s = std.fmt.bufPrint(buf[offset..], "</table></body></html>", .{}) catch return;
+    req.sendBody(buf[0..offset]) catch return;
 }
 
 var listener = zap.HttpListener.init(.{
