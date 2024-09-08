@@ -14,10 +14,42 @@ const html_header =
 fn show_tasks(req: zap.Request) void {
     var buf: [4096]u8 = undefined;
     var offset: usize = 0;
-    var s = std.fmt.bufPrint(buf[offset..], "<html>{s}<body><table>\n", .{html_header}) catch return;
+    var s = std.fmt.bufPrint(buf[offset..],
+        \\<html>
+        \\{s}
+        \\<body>
+        \\<table>
+        \\<tr>
+        \\  <th>id</th><th>name</th><th>description</th>
+        \\  <th>individual</th><th>warn_period_sec</th>
+        \\  <th>alert_period_sec</th><th>points_value</th>
+        \\</tr>
+    , .{html_header}) catch return;
     offset += s.len;
-    s = data.pr_tasks(buf[offset..]);
-    offset += s.len;
+    var available_tasks: [4]data.Task = undefined;
+    const tasks = data.getTasks(&available_tasks) catch return;
+    for (tasks) |task| {
+        s = std.fmt.bufPrint(buf[offset..],
+            \\<tr>
+            \\  <td>{d}</td>
+            \\  <td>{s}</td>
+            \\  <td>{s}</td>
+            \\  <td>{?}</td>
+            \\  <td>{d}</td>
+            \\  <td>{d}</td>
+            \\  <td>{d}</td>
+            \\</tr>
+        , .{
+            task.id,
+            task.name,
+            task.description,
+            task.individual,
+            task.warn_period_sec,
+            task.alert_period_sec,
+            task.points_value,
+        }) catch break;
+        offset += s.len;
+    }
     s = std.fmt.bufPrint(buf[offset..], "</table></body></html>", .{}) catch return;
     req.sendBody(buf[0..offset]) catch return;
 }

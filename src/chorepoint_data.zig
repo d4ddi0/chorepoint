@@ -4,59 +4,79 @@ const sqlite = @cImport(@cInclude("sqlite3.h"));
 // database struct
 var db: ?*sqlite.sqlite3 = null;
 
-const TextBuf = struct {
-    buf: []u8,
-    pos: usize = 0,
+pub const Task = struct {
+    id: u32,
+    name: []u8,
+    description: []u8,
+    individual: bool,
+    warn_period_sec: u32,
+    alert_period_sec: u32,
+    points_value: u32,
+    txt: [256]u8 = undefined,
 };
 
-fn tbufPrint(tbuf: *TextBuf, comptime fmt: []const u8, args: anytype) !void {
-    const slice: [:0]u8 = try std.fmt.bufPrintZ(tbuf.*.buf[tbuf.*.pos..], fmt, args);
-    std.debug.print(fmt, args);
-    tbuf.*.pos += slice.len;
-}
-
-fn pr_table_header(tbuf: *TextBuf, argc: c_int, names: [*c][*c]u8) !void {
-    try tbufPrint(tbuf, "<tr>", .{});
+fn parseIntZ(str: [*c]const u8) u32 {
+    var result: u32 = 0;
     var i: usize = 0;
-    while (i < argc) {
-        try tbufPrint(tbuf, "<th>{s}</th>", .{names[i]});
-        i += 1;
+    if (str == null) {
+        return 0;
     }
-    try tbufPrint(tbuf, "</tr>\n", .{});
-}
-
-export fn pr_task(data: ?*anyopaque, argc: c_int, argv: [*c][*c]u8, names: [*c][*c]u8) i32 {
-    const tbuf: *TextBuf = @alignCast(@ptrCast(data));
-    if (tbuf.*.pos == 0) {
-        pr_table_header(tbuf, argc, names) catch {
-            std.debug.print("error in pr_table_header\n", .{});
-            return sqlite.SQLITE_ERROR;
-        };
-    }
-    tbufPrint(tbuf, "<tr>", .{}) catch return sqlite.SQLITE_ERROR;
-    var i: usize = 0;
-    while (i < argc) {
-        if (argv[i] == null) {
-            tbufPrint(tbuf, "<td>NULL</td>", .{}) catch return sqlite.SQLITE_ERROR;
-        } else {
-            tbufPrint(tbuf, "<td>{s}</td>", .{argv[i]}) catch return sqlite.SQLITE_ERROR;
+    while (str[i] != 0) {
+        if ((str[i] < '0') or (str[i] > '9')) {
+            // Is it wrong to just ignore invalid inputs???
+            continue;
         }
+        result = (result * 10) + (str[i] - '0');
         i += 1;
     }
-    tbufPrint(tbuf, "</tr>\n", .{}) catch return sqlite.SQLITE_ERROR;
+    return result;
+}
+
+test "parseIntZ" {
+    try std.testing.expectEqual(5, parseIntZ("05"));
+    try std.testing.expectEqual(0, parseIntZ("Joshua"));
+    try std.testing.expectEqual(0, parseIntZ(null));
+    try std.testing.expectEqual(410, parseIntZ("d4dd10"));
+    try std.testing.expectEqual(1000, parseIntZ("-1000")); // not handling negative
+    //TODO: test for overflow
+}
+
+export fn getTask(data: ?*anyopaque, _: c_int, argv: [*c][*c]const u8, _: [*c][*c]u8) i32 {
+    if (data == null) {
+        return sqlite.SQLITE_ERROR;
+    }
+    const tasks: *[]Task = @alignCast(@ptrCast(data));
+    tasks.*.len += 1;
+    const task = &(tasks.*[tasks.*.len - 1]);
+    task.*.id = parseIntZ(argv[0]);
+    task.*.name = std.fmt.bufPrint(task.*.txt[0..], "{s}", .{argv[1]}) catch {
+        task.*.name = "";
+        return sqlite.SQLITE_ERROR;
+    };
+    task.*.description = std.fmt.bufPrint(task.*.txt[task.*.name.len..], "{s}", .{argv[2]}) catch {
+        task.*.description = "";
+        return sqlite.SQLITE_ERROR;
+    };
+    task.*.individual = (parseIntZ(argv[3]) != 0);
+    task.*.warn_period_sec = parseIntZ(argv[4]);
+    task.*.alert_period_sec = parseIntZ(argv[5]);
+    task.*.points_value = parseIntZ(argv[6]);
+
     return sqlite.SQLITE_OK;
 }
 
-pub fn pr_tasks(txt: []u8) []u8 {
-    const select_stmt = "SELECT * FROM task;";
-    var tbuf = TextBuf{ .buf = txt };
+pub fn getTasks(available_tasks: []Task) ![]Task {
+    //TODO: dynamic offset, maybe also dynamic limit
+    var tasks: []Task = available_tasks[0..0];
+    const select_stmt = "SELECT * FROM task LIMIT 4 OFFSET 0;";
     var err_msg: [*c]u8 = undefined;
-    const result = sqlite.sqlite3_exec(db, select_stmt, pr_task, &tbuf, &err_msg);
+    const result = sqlite.sqlite3_exec(db, select_stmt, getTask, @ptrCast(&tasks), &err_msg);
     defer sqlite.sqlite3_free(err_msg);
     if (result != sqlite.SQLITE_OK) {
         std.debug.print("Error getting tasks: {s}\n", .{err_msg});
+        return error.sqliteError;
     }
-    return tbuf.buf[0..tbuf.pos];
+    return tasks;
 }
 
 pub fn init() !void {
@@ -72,7 +92,7 @@ pub fn init() !void {
 
     const create_stmt =
         \\CREATE TABLE IF NOT EXISTS task (
-        \\id INT PRIMARY KEY
+        \\id INTEGER PRIMARY KEY
         \\,name TEXT
         \\,description TEXT
         \\,individual INT
