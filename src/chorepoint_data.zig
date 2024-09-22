@@ -65,10 +65,12 @@ export fn getTask(data: ?*anyopaque, _: c_int, argv: [*c][*c]const u8, _: [*c][*
     return sqlite.SQLITE_OK;
 }
 
-pub fn getTasks(available_tasks: []Task) ![]Task {
+pub fn getTasks(available_tasks: []Task, idx: usize, len: usize) ![]Task {
     //TODO: dynamic offset, maybe also dynamic limit
     var tasks: []Task = available_tasks[0..0];
-    const select_stmt = "SELECT * FROM task LIMIT 4 OFFSET 0;";
+    var query_buf: [64]u8 = undefined;
+    const select_stmt = try std.fmt.bufPrintZ(&query_buf, "SELECT * FROM task LIMIT {d} OFFSET {d};", .{ len, idx - 1 });
+    std.debug.print("{s}\n", .{select_stmt});
     var err_msg: [*c]u8 = undefined;
     const result = sqlite.sqlite3_exec(db, select_stmt, getTask, @ptrCast(&tasks), &err_msg);
     defer sqlite.sqlite3_free(err_msg);
@@ -76,6 +78,7 @@ pub fn getTasks(available_tasks: []Task) ![]Task {
         std.debug.print("Error getting tasks: {s}\n", .{err_msg});
         return error.sqliteError;
     }
+    std.debug.print("Returning {d} tasks\n", .{tasks.len});
     return tasks;
 }
 
